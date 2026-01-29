@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English Test Command Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        
+        select, input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: monospace;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+        
+        .output-group {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+        }
+        
+        .output-box {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .output-text {
+            font-family: monospace;
+            word-break: break-all;
+            white-space: pre-wrap;
+            margin: 0 0 10px 0;
+        }
+        
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            width: 100%;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        button:active {
+            background-color: #3d8b40;
+        }
+        
+        .copied {
+            background-color: #2196F3 !important;
+        }
+        
+        .note {
+            color: #666;
+            font-size: 12px;
+            font-style: italic;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>English Test Command Generator</h1>
+        
+        <div class="input-group">
+            <label for="userSelect">誰に向けての問題か:</label>
+            <select id="userSelect">
+                <option value="yokochi5123">yokochi5123</option>
+                <option value="harima1954">harima1954</option>
+                <option value="aya_1019_101">aya_1019_101</option>
+            </select>
+        </div>
+        
+        <div class="input-group">
+            <label for="questions">覚える問題 (改行区切り):</label>
+            <textarea id="questions" rows="6" placeholder="覚える問題を改行で区切って入力してください"></textarea>
+        </div>
+        
+        <div class="input-group">
+            <label for="realQuestions">本当の問題 (改行区切り、オプション):</label>
+            <textarea id="realQuestions" rows="6" placeholder="本当の問題を改行で区切って入力してください(省略可)"></textarea>
+        </div>
+        
+        <div class="input-group">
+            <label for="threadId">Thread ID (数値、/real_question用):</label>
+            <input type="number" id="threadId" placeholder="Thread IDを入力してください" value="1">
+        </div>
+        
+        <div class="output-group">
+            <h2>生成されたコマンド</h2>
+            
+            <div class="output-box">
+                <pre class="output-text" id="englishTestOutput"></pre>
+                <button onclick="copyToClipboard('englishTestOutput', this)">コピー</button>
+            </div>
+            
+            <div class="output-box" id="realQuetionBox" style="display: none;">
+                <pre class="output-text" id="realQuetionOutput"></pre>
+                <button onclick="copyToClipboard('realQuetionOutput', this)">コピー</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 入力フィールドの参照を取得
+        const userSelect = document.getElementById('userSelect');
+        const questionsInput = document.getElementById('questions');
+        const realQuestionsInput = document.getElementById('realQuestions');
+        const threadIdInput = document.getElementById('threadId');
+        
+        // 出力フィールドの参照を取得
+        const englishTestOutput = document.getElementById('englishTestOutput');
+        const realQuetionOutput = document.getElementById('realQuetionOutput');
+        const realQuetionBox = document.getElementById('realQuetionBox');
+        
+        // 入力が変更されたときに出力を更新
+        userSelect.addEventListener('change', updateOutputs);
+        questionsInput.addEventListener('input', updateOutputs);
+        realQuestionsInput.addEventListener('input', updateOutputs);
+        threadIdInput.addEventListener('input', updateOutputs);
+        
+        function updateOutputs() {
+            const user = userSelect.value;
+            const questions = questionsInput.value.trim();
+            const realQuestions = realQuestionsInput.value.trim();
+            const threadId = threadIdInput.value.trim();
+            
+            // 改行をスペースに変換
+            const questionsSpaced = questions.split('\n').filter(line => line.trim()).join(' ');
+            const realQuestionsSpaced = realQuestions.split('\n').filter(line => line.trim()).join(' ');
+            
+            // /english_test コマンドの生成
+            let englishTestCmd = `/english_test user:${user} questions:${questionsSpaced}`;
+            if (realQuestionsSpaced) {
+                englishTestCmd += ` real_questions:${realQuestionsSpaced}`;
+            }
+            englishTestOutput.textContent = englishTestCmd;
+            
+            // /real_quetion コマンドの生成
+            if (realQuestionsSpaced && threadId) {
+                const realQuetionCmd = `/real_quetion thread_id:${threadId} real_questions:${realQuestionsSpaced}`;
+                realQuetionOutput.textContent = realQuetionCmd;
+                realQuetionBox.style.display = 'block';
+            } else {
+                realQuetionBox.style.display = 'none';
+            }
+        }
+        
+        // クリップボードにコピーする関数
+        function copyToClipboard(elementId, button) {
+            const text = document.getElementById(elementId).textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                // ボタンのテキストを一時的に変更
+                const originalText = button.textContent;
+                button.textContent = 'コピーしました!';
+                button.classList.add('copied');
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                alert('コピーに失敗しました: ' + err);
+            });
+        }
+        
+        // 初期表示
+        updateOutputs();
+    </script>
+</body>
+</html>
